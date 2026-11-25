@@ -578,39 +578,43 @@
         status.innerText = 'Збереження в GitHub...';
 
         try {
-          const host = 'api.' + 'github.' + 'com';
-const apiUrl = 'https' + '://' + host + '/repos/dev10v/10v/contents/data.json';
+                     const host = 'api.' + 'github.' + 'com';
+            const baseUrl = 'https' + '://' + host + '/repos/dev10v/10v/contents/data.json';
+            const branches = ['main10B', 'main', 'master'];
+            let fileInfo = null;
+            let activeBranch = '';
 
-
-            const getRes = await fetch(apiUrl, {
-
-                headers: { 'Authorization': 'Bearer ' + ghToken }
-            });
-            if (!getRes.ok) {
-                if (getRes.status === 401) localStorage.removeItem('gh_admin_token');
-                throw new Error('HTTP ' + getRes.status);
+            for (const br of branches) {
+                const r = await fetch(baseUrl + '?ref=' + br, {
+                    headers: { 'Authorization': 'token ' + ghToken }
+                });
+                if (r.ok) {
+                    fileInfo = await r.json();
+                    activeBranch = br;
+                    break;
+                }
             }
-            const fileInfo = await getRes.json();
+            if (!fileInfo) throw new Error('Файл data.json не знайдено (404)');
 
             const bytes = new TextEncoder().encode(JSON.stringify(payloadObj, null, 2));
             let binStr = '';
             bytes.forEach((b) => { binStr += String.fromCharCode(b); });
 
-            const putRes = await fetch(apiUrl, {
+            const putRes = await fetch(baseUrl, {
                 method: 'PUT',
                 headers: {
-                    'Authorization': 'Bearer ' + ghToken,
+                    'Authorization': 'token ' + ghToken,
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({
                     message: 'Update schedule',
                     content: btoa(binStr),
                     sha: fileInfo.sha,
-                    branch: 'main'
+                    branch: activeBranch
                 })
             });
 
-            if (!putRes.ok) throw new Error('HTTP ' + putRes.status);
+            if (!putRes.ok) throw new Error('PUT HTTP ' + putRes.status);
 
             status.innerText = 'Збережено! Оновлення через 15 сек...';
             scheduleData = newSchedule;
