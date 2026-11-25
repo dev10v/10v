@@ -614,11 +614,13 @@ const apiUrl = 'https' + '://' + host + '/repos/dev10v/10v/contents/data.json';
             scheduleData = newSchedule;
             renderSchedule();
             setTimeout(() => { closeAdmin(); saveBtn.disabled = false; }, 1500);
-        } catch (e) {
+               } catch (e) {
             console.error(e);
-            status.innerText = 'Помилка збереження. Перевірте токен GitHub.';
+            localStorage.removeItem('gh_admin_token');
+            status.innerText = 'Помилка (' + e.message + '). Натисніть ще раз і введіть токен.';
             saveBtn.disabled = false;
         }
+
     }
 
 
