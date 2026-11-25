@@ -577,7 +577,10 @@
         status.innerText = 'Збереження в GitHub...';
 
         try {
-            const apiUrl = 'https://' + '://github.com';
+          const host = 'api.' + 'github.' + 'com';
+const apiUrl = 'https' + '://' + host + '/repos/dev10v/10v/contents/data.json';
+
+
             const getRes = await fetch(apiUrl + '?ref=main10B', {
                 headers: { 'Authorization': 'Bearer ' + ghToken }
             });
