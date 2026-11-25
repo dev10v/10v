@@ -1,0 +1,717 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Розклад 10-В</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+        :root {
+            --bg-color: #0a0a0c;
+            --card-bg: rgba(30, 30, 35, 0.6);
+            --card-border: rgba(255, 255, 255, 0.08);
+            --text-main: #ffffff;
+            --text-muted: #888891;
+            --accent-green: #10b981;
+            --accent-blue: #3b82f6;
+            --accent-orange: #f59e0b;
+            --accent-red: #ef4444;
+            --radius: 16px;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif; }
+
+        body {
+            background-color: var(--bg-color);
+            background-image: 
+                radial-gradient(circle at 15% 50%, rgba(16, 185, 129, 0.04), transparent 25%),
+                radial-gradient(circle at 85% 30%, rgba(59, 130, 246, 0.04), transparent 25%);
+            color: var(--text-main);
+            padding: 30px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        .container { width: 100%; max-width: 1600px; z-index: 1; }
+
+        @keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4); } 70% { box-shadow: 0 0 0 10px rgba(16, 185, 129, 0); } 100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); } }
+
+        /* Шапка */
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            padding: 20px 30px;
+            background: rgba(25, 25, 30, 0.4);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--card-border);
+            border-radius: var(--radius);
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+
+        .title-block h1 { font-size: 32px; font-weight: 700; letter-spacing: -0.5px; }
+        .title-block h1 span { background: linear-gradient(135deg, #10b981, #3b82f6); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .subtitle { color: var(--text-muted); font-size: 14px; margin-top: 4px; }
+
+        .info-block { display: flex; align-items: center; gap: 20px; background: rgba(0, 0, 0, 0.3); padding: 12px 24px; border-radius: 12px; border: 1px solid var(--card-border); }
+        .week-info { display: flex; flex-direction: column; gap: 3px; padding-right: 20px; border-right: 1px solid var(--card-border); }
+        .week-label { font-size: 10px; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); font-weight: 700; }
+        .week-number { font-size: 16px; font-weight: 700; display: flex; align-items: baseline; gap: 8px; white-space: nowrap; }
+        .week-number #weekRange { font-size: 12px; font-weight: 500; color: var(--text-muted); }
+        .week-mode { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; }
+        .status-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--accent-green); animation: pulse 2s infinite; }
+        .clock { font-size: 14px; color: var(--text-muted); font-weight: 500; font-variant-numeric: tabular-nums;}
+
+        /* Вкладки */
+        .controls { display: flex; background: rgba(25, 25, 30, 0.6); backdrop-filter: blur(10px); padding: 6px; border-radius: 14px; border: 1px solid var(--card-border); margin-bottom: 30px; width: fit-content; box-shadow: 0 4px 20px rgba(0,0,0,0.2); }
+        .btn { background: transparent; color: var(--text-muted); border: none; padding: 12px 28px; border-radius: 10px; cursor: pointer; font-size: 15px; font-weight: 600; transition: all 0.3s; }
+        .btn:hover { color: var(--text-main); }
+        .btn.active { background-color: rgba(255, 255, 255, 0.1); color: var(--text-main); box-shadow: 0 2px 10px rgba(0,0,0,0.2); }
+
+        /* Сетка */
+        .schedule-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 24px; width: 100%; }
+        .day-column { display: flex; flex-direction: column; gap: 16px; }
+        .day-title { font-size: 18px; font-weight: 700; text-align: center; padding-bottom: 12px; border-bottom: 1px solid var(--card-border); }
+
+        /* Карточка */
+        .lesson-card {
+            background: var(--card-bg); border: 1px solid var(--card-border); border-radius: var(--radius); padding: 18px;
+            cursor: pointer; display: flex; flex-direction: column; gap: 8px; position: relative; overflow: hidden;
+            backdrop-filter: blur(10px); opacity: 0; animation: fadeInUp 0.5s ease forwards;
+            transition: transform 0.3s, box-shadow 0.3s, border-color 0.3s;
+        }
+        .lesson-card:hover { transform: translateY(-5px) scale(1.02); border-color: rgba(255, 255, 255, 0.2); box-shadow: 0 10px 25px rgba(0,0,0,0.4); z-index: 10; }
+        .lesson-card::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: var(--accent-green); transition: width 0.3s; }
+        .lesson-card:hover::before { width: 6px; }
+        .lesson-card.offline::before { background: var(--accent-blue); }
+        .lesson-card.defense::before { background: var(--accent-red); }
+        .lesson-card.empty { background: transparent; border-style: dashed; cursor: default; opacity: 0.45; }
+        .lesson-card.empty:hover { transform: none; box-shadow: none; border-color: var(--card-border); }
+        .lesson-card.empty::before { display: none; }
+
+        .lesson-time { font-size: 12px; color: var(--text-muted); display: flex; justify-content: space-between; }
+        .lesson-subject { font-size: 16px; font-weight: 600; color: var(--text-main); }
+        .lesson-info { font-size: 13px; color: var(--text-muted); display: flex; flex-direction: column; gap: 6px; margin-top: 4px; }
+
+        /* Переход */
+        .transition-block { background: rgba(245, 158, 11, 0.05); border: 1px dashed rgba(245, 158, 11, 0.5); color: var(--accent-orange); text-align: center; padding: 20px; border-radius: var(--radius); font-weight: 600; font-size: 14px; display: flex; flex-direction: column; gap: 6px; opacity: 0; animation: fadeInUp 0.5s ease forwards; }
+
+        /* Модалка */
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.8); backdrop-filter: blur(10px); display: flex; justify-content: center; align-items: center; opacity: 0; visibility: hidden; transition: all 0.3s ease; z-index: 1000; padding: 20px; }
+        .modal-overlay.active { opacity: 1; visibility: visible; }
+        .modal-content { background: #1e1e24; border: 1px solid rgba(255, 255, 255, 0.1); padding: 32px; border-radius: 24px; width: 100%; max-width: 450px; position: relative; transform: scale(0.9) translateY(20px); transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        .modal-overlay.active .modal-content { transform: scale(1) translateY(0); }
+        .close-btn { position: absolute; top: 20px; right: 20px; background: rgba(255,255,255,0.05); border: none; color: var(--text-muted); width: 36px; height: 36px; border-radius: 50%; display: flex; justify-content: center; align-items: center; cursor: pointer; font-size: 18px; transition: all 0.3s; }
+        .close-btn:hover { background: var(--accent-red); color: #fff; transform: rotate(90deg); }
+        .modal-subject { font-size: 24px; font-weight: 700; margin-bottom: 24px; color: var(--text-main); padding-right: 40px; line-height: 1.3; }
+        .modal-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+        .modal-item { background: rgba(0,0,0,0.3); padding: 16px; border-radius: 14px; border: 1px solid rgba(255,255,255,0.03); }
+        .modal-item.full { grid-column: span 2; }
+        .modal-label { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; font-weight: 600;}
+        .modal-value { font-size: 16px; font-weight: 500; color: var(--text-main); }
+        .modal-groups { display: none; margin-top: 16px; background: rgba(0,0,0,0.3); padding: 16px; border-radius: 14px; border: 1px solid rgba(255,255,255,0.03); }
+        .modal-group-row { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 14px; padding: 9px 0; border-top: 1px solid rgba(255,255,255,0.06); font-size: 14px; }
+        .modal-group-row:first-of-type { border-top: none; padding-top: 0; }
+        .modal-group-row:last-child { padding-bottom: 0; }
+        .group-name { font-weight: 700; color: var(--accent-green); min-width: 72px; }
+        .group-room { color: var(--text-main); white-space: nowrap; }
+        .group-teacher { color: var(--text-muted); }
+
+        /* Админка */
+        #adminBtn { display: none; background: #333; color: white; border: 1px solid #555; padding: 10px 20px; border-radius: 10px; cursor: pointer; font-weight: 600; transition: 0.2s; white-space: nowrap; }
+        #adminBtn:hover { background: #444; }
+
+        .admin-modal-content {
+            background: #1e1e24; border: 1px solid rgba(255, 255, 255, 0.1); padding: 28px;
+            border-radius: 24px; width: 100%; max-width: 1250px; max-height: 92vh; position: relative;
+            display: flex; flex-direction: column; transform: scale(0.96) translateY(10px);
+            transition: transform 0.3s ease;
+        }
+        .modal-overlay.active .admin-modal-content { transform: scale(1) translateY(0); }
+        .admin-header h2 { font-size: 24px; margin-bottom: 18px; padding-right: 40px; }
+        .admin-toolbar { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-bottom: 18px; padding-bottom: 18px; border-bottom: 1px solid var(--card-border); }
+        .admin-toolbar label { font-size: 14px; color: var(--text-muted); font-weight: 600; }
+        .admin-select { background: #0a0a0c; color: white; border: 1px solid #333; padding: 10px 14px; border-radius: 8px; font-family: inherit; min-width: 260px; }
+        .admin-editor { overflow-y: auto; flex: 1; padding-right: 10px; scrollbar-width: thin; }
+        .admin-day { margin-bottom: 26px; }
+        .admin-day > h3 { font-size: 19px; margin-bottom: 12px; color: var(--text-main); position: sticky; top: 0; background: #1e1e24; padding: 6px 0; z-index: 2; }
+        .admin-mode { margin-bottom: 16px; padding-left: 12px; border-left: 2px solid var(--card-border); }
+        .admin-mode > h4 { font-size: 13px; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); margin-bottom: 8px; }
+        .admin-row { display: grid; grid-template-columns: 70px 2fr 1.15fr 1.5fr 0.75fr 0.9fr; gap: 8px; align-items: center; margin-bottom: 6px; }
+        .admin-row .lesson-num { font-size: 12px; color: var(--text-muted); white-space: nowrap; }
+        .admin-row input { background: #0a0a0c; color: white; border: 1px solid #333; padding: 8px 10px; border-radius: 6px; width: 100%; font-family: inherit; font-size: 13px; }
+        .admin-row input:focus { outline: none; border-color: var(--accent-green); }
+        .admin-actions { display: flex; align-items: center; gap: 16px; padding-top: 18px; margin-top: 8px; border-top: 1px solid var(--card-border); }
+        .save-btn { background: var(--accent-green); color: #000; border: none; padding: 12px 28px; border-radius: 10px; cursor: pointer; font-weight: 700; font-size: 15px; }
+        .save-btn:hover { filter: brightness(1.1); }
+        .save-btn:disabled { opacity: 0.5; cursor: wait; }
+        #adminStatus { font-size: 13px; color: var(--text-muted); }
+
+        @media (max-width: 1200px) { .schedule-grid { grid-template-columns: repeat(3, 1fr); } }
+        @media (max-width: 900px) {
+            .admin-row { grid-template-columns: 1fr 1fr; }
+            .admin-row .lesson-num { grid-column: span 2; }
+            .admin-modal-content { padding: 18px; }
+        }
+        @media (max-width: 768px) { body { padding: 15px; } header { flex-direction: column; align-items: flex-start; padding: 15px; } .controls { width: 100%; overflow-x: auto; } .btn { flex: 1; white-space: nowrap; padding: 10px 15px; } .schedule-grid { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <div class="title-block">
+            <h1>Розклад <span>10-В</span></h1>
+            <div class="subtitle">Класний керівник: Берковський Віталій Володимирович</div>
+        </div>
+        <div class="info-block">
+            <div class="week-info">
+                <div class="week-label">Поточний тиждень</div>
+                <div class="week-number"><span id="weekNumber">—</span><span id="weekRange"></span></div>
+                <div class="week-mode">
+                    <div class="status-dot" id="statusDot"></div>
+                    <span id="statusText">Завантаження...</span>
+                </div>
+            </div>
+            <div class="clock" id="kyivClock">Завантаження...</div>
+        </div>
+        <!-- Кнопка видна только при ?admin=SECRET_ADMIN_TOKEN_10V -->
+        <button id="adminBtn" onclick="openAdmin()">⚙️ Налаштування</button>
+    </header>
+
+    <div class="controls">
+        <button class="btn" id="btn-online" onclick="setMode('online')">Онлайн</button>
+        <button class="btn" id="btn-offline" onclick="setMode('offline')">Очно</button>
+        <button class="btn" id="btn-defense" onclick="setMode('defense')">Захист</button>
+    </div>
+
+    <div class="schedule-grid" id="scheduleGrid"></div>
+</div>
+
+<!-- Модалка -->
+<div class="modal-overlay" id="modalOverlay">
+    <div class="modal-content">
+        <button class="close-btn" onclick="closeModal()">✕</button>
+        <div class="modal-subject" id="mSubject">Предмет</div>
+        <div class="modal-grid">
+            <div class="modal-item">
+                <div class="modal-label">Час</div>
+                <div class="modal-value" id="mTime">08:15 - 09:00</div>
+            </div>
+            <div class="modal-item">
+                <div class="modal-label">Кабінет</div>
+                <div class="modal-value" id="mRoom">101</div>
+            </div>
+            <div class="modal-item full">
+                <div class="modal-label">Викладач</div>
+                <div class="modal-value" id="mTeacher">Ім'я</div>
+            </div>
+            <div class="modal-item full">
+                <div class="modal-label">Формат</div>
+                <div class="modal-value" id="mFormat">Онлайн</div>
+            </div>
+        </div>
+        <div class="modal-groups" id="mGroups"></div>
+    </div>
+</div>
+
+<!-- Админка (модальное окно) -->
+<div class="modal-overlay" id="adminModal">
+    <div class="admin-modal-content">
+        <button class="close-btn" onclick="closeAdmin()">✕</button>
+        <div class="admin-header">
+            <h2>⚙️ Налаштування розкладу</h2>
+        </div>
+        <div class="admin-toolbar">
+            <label for="forceModeSelect">Режим тижня:</label>
+            <select class="admin-select" id="forceModeSelect">
+                <option value="auto">Авто (за розрахунком)</option>
+                <option value="online">Примусово Онлайн</option>
+                <option value="offline">Примусово Очно</option>
+            </select>
+        </div>
+        <div class="admin-editor" id="adminEditor"></div>
+        <div class="admin-actions">
+            <button class="save-btn" id="saveBtn" onclick="saveSchedule()">Зберегти зміни</button>
+            <span id="adminStatus"></span>
+        </div>
+    </div>
+</div>
+
+<script>
+    const times = [
+        "08:15 – 09:00", "09:10 – 09:55", "10:15 – 11:00", "11:10 – 11:55",
+        "12:05 – 12:50", "13:10 – 13:55", "14:05 – 14:50", "14:55 – 15:40"
+    ];
+
+    let scheduleData = {};
+    let currentMode = 'online';
+    let forceMode = 'auto';
+    let startDate = '2026-09-01';
+
+    // Токен НЕ хранится в коде: он берётся из URL и отправляется на сервер,
+    // а сервер сам проверяет его. Здесь только константа для показа кнопки.
+    const ADMIN_URL_TOKEN = 'SECRET_ADMIN_TOKEN_10V';
+    let ADMIN_TOKEN = null;
+
+    // --- ИНИЦИАЛИЗАЦИЯ И ЗАГРУЗКА ДАННЫХ ---
+    async function init() {
+        // Проверка на админа (только чтобы показать кнопку)
+        const urlParams = new URLSearchParams(window.location.search);
+        const tokenFromUrl = urlParams.get('admin');
+        if (tokenFromUrl === ADMIN_URL_TOKEN) {
+            ADMIN_TOKEN = tokenFromUrl;
+            document.getElementById('adminBtn').style.display = 'inline-block';
+        }
+
+        // Загрузка данных с сервера
+        try {
+            const response = await fetch('/api/schedule');
+            const data = await response.json();
+            
+            scheduleData = data.scheduleData;
+            startDate = data.startDate;
+            forceMode = data.forceMode || 'auto';
+            document.getElementById('forceModeSelect').value = forceMode;
+
+            initWeekMode();
+            renderSchedule();
+        } catch (e) {
+            console.error("Ошибка загрузки:", e);
+            alert("Не вдалося завантажити розклад. Перевірте, чи запущено сервер.");
+        }
+    }
+
+    // --- ЛОГИКА НЕДЕЛЬ ---
+    // Дату берём по Киеву, чтобы неделя не «прыгала» из-за часового пояса устройства.
+    function getKyivToday() {
+        const parts = new Intl.DateTimeFormat('en-CA', {
+            timeZone: 'Europe/Kyiv',
+            year: 'numeric', month: '2-digit', day: '2-digit'
+        }).format(new Date());
+        const [year, month, day] = parts.split('-').map(Number);
+        return new Date(year, month - 1, day);
+    }
+
+    function getWeekInfo(date = getKyivToday()) {
+        const start = new Date(startDate + 'T00:00:00');
+        start.setHours(0, 0, 0, 0);
+
+        // Первый понедельник после startDate — первая полная учебная неделя
+        const firstMonday = new Date(start);
+        const startDow = firstMonday.getDay(); // 0 = воскресенье, 1 = понедельник
+        const offset = (startDow === 1) ? 0 : (8 - startDow) % 7;
+        firstMonday.setDate(firstMonday.getDate() + offset);
+        firstMonday.setHours(0, 0, 0, 0);
+
+        const today = new Date(date);
+        today.setHours(0, 0, 0, 0);
+
+        // Понедельник текущей календарной недели
+        const monday = new Date(today);
+        const todayDow = (monday.getDay() + 6) % 7; // 0 = понедельник
+        monday.setDate(monday.getDate() - todayDow);
+        monday.setHours(0, 0, 0, 0);
+
+        // Считаем целые недели: округление защищает от перехода на летнее/зимнее время
+        let weekNumber = Math.round((monday - firstMonday) / (7 * 24 * 60 * 60 * 1000)) + 1;
+        if (weekNumber < 1) weekNumber = 1; // стартовый неполный тиждень
+
+        const sunday = new Date(monday);
+        sunday.setDate(monday.getDate() + 6);
+
+        // Нечётная неделя — Онлайн, чётная — Очно
+        const isOnlineWeek = (weekNumber % 2 === 1);
+
+        return { weekNumber, monday, sunday, isOnlineWeek };
+    }
+
+    function formatShortDate(date) {
+        return date.toLocaleDateString('uk-UA', { day: '2-digit', month: '2-digit' });
+    }
+
+    function renderWeekInfo(info) {
+        document.getElementById('weekNumber').innerText = `Тиждень ${info.weekNumber}`;
+        document.getElementById('weekRange').innerText = `${formatShortDate(info.monday)} – ${formatShortDate(info.sunday)}`;
+    }
+
+    // Ключ недели — её понедельник. Пока он не изменился, ручной выбор сохраняется.
+    let currentWeekKey = null;
+
+    const MODE_STORAGE_KEY = 'scheduleMode';
+    const MODE_WEEK_STORAGE_KEY = 'scheduleModeWeek';
+
+    function getSavedMode(weekKey) {
+        try {
+            if (localStorage.getItem(MODE_WEEK_STORAGE_KEY) !== weekKey) {
+                localStorage.removeItem(MODE_STORAGE_KEY);
+                localStorage.removeItem(MODE_WEEK_STORAGE_KEY);
+                return null;
+            }
+            const saved = localStorage.getItem(MODE_STORAGE_KEY);
+            return ['online', 'offline', 'defense'].includes(saved) ? saved : null;
+        } catch (e) {
+            return null;
+        }
+    }
+
+    function saveMode(mode) {
+        try {
+            localStorage.setItem(MODE_STORAGE_KEY, mode);
+            localStorage.setItem(MODE_WEEK_STORAGE_KEY, currentWeekKey);
+        } catch (e) {
+            // localStorage может быть недоступен — просто игнорируем
+        }
+    }
+
+    // Режим самой текущей недели — то, что всегда показываем в шапке.
+    // Он НЕ зависит от того, какое расписание сейчас открыто вручную.
+    let weekMode = 'online';
+
+    function initWeekMode() {
+        const weekInfo = getWeekInfo();
+        currentWeekKey = weekInfo.monday.toDateString();
+        renderWeekInfo(weekInfo);
+
+        // Режим недели: принудительный из админки или расчёт по чётности.
+        weekMode = (forceMode !== 'auto')
+            ? forceMode
+            : (weekInfo.isOnlineWeek ? 'online' : 'offline');
+        applyWeekStatus(weekMode);
+
+        // Что открыто сейчас: ручной выбор (запоминается на текущую неделю)
+        // или расписание самой недели по умолчанию.
+        const savedMode = (forceMode === 'auto') ? getSavedMode(currentWeekKey) : null;
+        applyMode(savedMode || weekMode);
+    }
+
+    // --- РУЧНОЕ ПЕРЕКЛЮЧЕНИЕ РАСПИСАНИЙ ---
+    function setMode(mode) {
+        saveMode(mode);
+        applyMode(mode);
+        renderSchedule();
+    }
+
+    // Режим сам переключится только с наступлением нового понедельника.
+    function checkWeekRollover() {
+        const weekInfo = getWeekInfo();
+        const key = weekInfo.monday.toDateString();
+        if (key === currentWeekKey) return;
+
+        initWeekMode();
+        renderSchedule();
+    }
+    setInterval(checkWeekRollover, 60 * 1000);
+    document.addEventListener('visibilitychange', () => {
+        if (!document.hidden) checkWeekRollover();
+    });
+
+    // --- РАСЧЁТ «ЗАХИСТ УКРАЇНИ» ---
+    // Пока НЕ подключён к логике недель: правило ещё не утверждено.
+    // Когда решим, можно будет вызвать getDefenseWeekInfo() в initWeekMode().
+    const DEFENSE_WEEK_INTERVAL = 4; // TODO: согласовать правило
+
+    function getDefenseWeekInfo(date = new Date()) {
+        const weekInfo = getWeekInfo(date);
+        // Временное правило-заглушка: каждый DEFENSE_WEEK_INTERVAL-й тиждень.
+        // Заменить на согласованное правило.
+        const isDefenseWeek = weekInfo.weekNumber > 0 && weekInfo.weekNumber % DEFENSE_WEEK_INTERVAL === 0;
+        return { ...weekInfo, isDefenseWeek };
+    }
+
+    // Статус в шапке — это режим ТЕКУЩЕЙ НЕДЕЛИ (не выбранного расписания).
+    function applyWeekStatus(mode) {
+        const statusDot = document.getElementById('statusDot');
+        const statusText = document.getElementById('statusText');
+
+        if (mode === 'online') {
+            statusText.innerText = 'ОНЛАЙН';
+            statusDot.style.background = 'var(--accent-green)';
+        } else if (mode === 'offline') {
+            statusText.innerText = 'ОЧНО';
+            statusDot.style.background = 'var(--accent-blue)';
+        } else {
+            statusText.innerText = 'ЗАХИСТ УКРАЇНИ';
+            statusDot.style.background = 'var(--accent-red)';
+        }
+    }
+
+    // Подсветка кнопки — какое расписание открыто сейчас.
+    function applyMode(mode) {
+        currentMode = mode;
+        document.querySelectorAll('.btn').forEach(b => b.classList.remove('active'));
+
+        if (mode === 'online') {
+            document.getElementById('btn-online').classList.add('active');
+        } else if (mode === 'offline') {
+            document.getElementById('btn-offline').classList.add('active');
+        } else {
+            document.getElementById('btn-defense').classList.add('active');
+        }
+    }
+
+    // --- ЧАСЫ ---
+    function updateClock() {
+        const options = { timeZone: 'Europe/Kyiv', day: '2-digit', month: 'short', weekday: 'short', hour: '2-digit', minute: '2-digit', second: '2-digit' };
+        const formatter = new Intl.DateTimeFormat('uk-UA', options);
+        let formatted = formatter.format(new Date());
+        formatted = formatted.replace(',', ' •');
+        document.getElementById('kyivClock').innerText = formatted;
+    }
+    setInterval(updateClock, 1000);
+
+    // --- АДМИНКА ---
+    const MODE_LABELS = { online: 'Онлайн', defense: 'Захист України', offline: 'Очно' };
+
+    function openAdmin() {
+        if (!ADMIN_TOKEN) return;
+        renderAdminEditor();
+        document.getElementById('forceModeSelect').value = forceMode;
+        document.getElementById('adminStatus').innerText = '';
+        document.getElementById('adminModal').classList.add('active');
+    }
+
+    function closeAdmin() {
+        document.getElementById('adminModal').classList.remove('active');
+    }
+
+    function escapeHtml(value) {
+        return String(value == null ? '' : value)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;');
+    }
+
+    function renderAdminEditor() {
+        const editor = document.getElementById('adminEditor');
+        editor.innerHTML = '';
+
+        for (const [day, modes] of Object.entries(scheduleData)) {
+            const dayEl = document.createElement('div');
+            dayEl.className = 'admin-day';
+
+            const dayTitle = document.createElement('h3');
+            dayTitle.innerText = day;
+            dayEl.appendChild(dayTitle);
+
+            for (const mode of ['online', 'defense', 'offline']) {
+                const lessons = modes[mode] || [];
+                if (!lessons.some(Boolean)) continue;
+
+                const modeEl = document.createElement('div');
+                modeEl.className = 'admin-mode';
+
+                const modeTitle = document.createElement('h4');
+                modeTitle.innerText = MODE_LABELS[mode] || mode;
+                modeEl.appendChild(modeTitle);
+
+                lessons.forEach((lesson, index) => {
+                    if (!lesson) return;
+
+                    const row = document.createElement('div');
+                    row.className = 'admin-row';
+                    row.dataset.day = day;
+                    row.dataset.mode = mode;
+                    row.dataset.index = String(index);
+                    row.innerHTML = `
+                        <span class="lesson-num">Урок ${index + 1}</span>
+                        <input data-field="subject" value="${escapeHtml(lesson.subject)}" placeholder="Предмет">
+                        <input data-field="teacherShort" value="${escapeHtml(lesson.teacherShort)}" placeholder="Викладач (коротко)">
+                        <input data-field="teacherFull" value="${escapeHtml(lesson.teacherFull)}" placeholder="Викладач (повністю)">
+                        <input data-field="room" value="${escapeHtml(lesson.room)}" placeholder="Кабінет">
+                        <input data-field="time" value="${escapeHtml(lesson.time || times[index] || '')}" placeholder="Час">
+                    `;
+                    modeEl.appendChild(row);
+                });
+
+                dayEl.appendChild(modeEl);
+            }
+
+            editor.appendChild(dayEl);
+        }
+    }
+
+    function collectAdminData() {
+        const result = JSON.parse(JSON.stringify(scheduleData));
+        const rows = document.querySelectorAll('#adminEditor .admin-row');
+
+        rows.forEach((row) => {
+            const { day, mode, index } = row.dataset;
+            const lessons = result[day] && result[day][mode];
+            const lesson = lessons && lessons[Number(index)];
+            if (!lesson) return;
+
+            row.querySelectorAll('input[data-field]').forEach((input) => {
+                lesson[input.dataset.field] = input.value.trim();
+            });
+        });
+
+        return result;
+    }
+
+    async function saveSchedule() {
+        if (!ADMIN_TOKEN) return;
+
+        const saveBtn = document.getElementById('saveBtn');
+        const status = document.getElementById('adminStatus');
+
+        forceMode = document.getElementById('forceModeSelect').value;
+        const newSchedule = collectAdminData();
+
+        saveBtn.disabled = true;
+        status.innerText = 'Збереження...';
+
+        try {
+            const response = await fetch('/api/schedule', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': ADMIN_TOKEN
+                },
+                body: JSON.stringify({ startDate, forceMode, scheduleData: newSchedule })
+            });
+
+            if (!response.ok) {
+                throw new Error('HTTP ' + response.status);
+            }
+
+            status.innerText = 'Збережено! Перезавантаження...';
+            window.location.reload();
+        } catch (e) {
+            console.error('Помилка збереження:', e);
+            status.innerText = 'Помилка збереження. Перевірте пароль і сервер.';
+            saveBtn.disabled = false;
+        }
+    }
+
+    // --- РЕНДЕР ---
+    function renderSchedule() {
+        const grid = document.getElementById('scheduleGrid');
+        grid.innerHTML = '';
+
+        for (const [day, modes] of Object.entries(scheduleData)) {
+            const dayCol = document.createElement('div');
+            dayCol.className = 'day-column';
+
+            const dayTitle = document.createElement('div');
+            dayTitle.className = 'day-title';
+            dayTitle.innerText = day;
+            dayCol.appendChild(dayTitle);
+
+            const lessons = Array.isArray(modes) ? modes : (modes[currentMode] || []);
+            let delay = 0;
+
+            lessons.forEach((lesson, index) => {
+                if (lesson === null) {
+                    if (currentMode === 'offline' && index === 3) {
+                        const trans = document.createElement('div');
+                        trans.className = 'transition-block';
+                        trans.style.animationDelay = `${delay * 0.05}s`;
+                        trans.innerHTML = `🚶 ПЕРЕХІД В ШКОЛУ <span>11:10 – 11:55</span>`;
+                        dayCol.appendChild(trans);
+                    } else {
+                        const empty = document.createElement('div');
+                        empty.className = 'lesson-card empty';
+                        empty.style.animationDelay = `${delay * 0.05}s`;
+                        empty.innerHTML = `
+                            <div class="lesson-time"><span>Урок ${index + 1}</span><span>${times[index] || ''}</span></div>
+                            <div class="lesson-subject">Уроку немає</div>
+                        `;
+                        dayCol.appendChild(empty);
+                    }
+                    delay++;
+                    return;
+                }
+
+                let formatStr = 'Онлайн';
+                let cardClass = '';
+                if (currentMode === 'offline') {
+                    formatStr = (index < 3) ? 'Онлайн' : 'Очно';
+                    cardClass = (index < 3) ? '' : 'offline';
+                } else if (currentMode === 'defense') {
+                    formatStr = 'Очно';
+                    if (lesson.subject === 'Захист України') cardClass = 'defense';
+                }
+
+                const lessonTime = lesson.time || times[index] || '';
+                const card = document.createElement('div');
+                card.className = `lesson-card ${cardClass}`;
+                card.style.animationDelay = `${delay * 0.05}s`;
+                card.innerHTML = `
+                    <div class="lesson-time"><span>Урок ${index + 1}</span><span>${lessonTime}</span></div>
+                    <div class="lesson-subject">${lesson.subject}</div>
+                    <div class="lesson-info"><span>👤 ${lesson.teacherShort}</span><span>📍 ${lesson.room}</span></div>
+                `;
+                card.onclick = () => openModal(lesson, lessonTime, formatStr);
+                dayCol.appendChild(card);
+                delay++;
+            });
+
+            grid.appendChild(dayCol);
+        }
+    }
+
+    function openModal(lesson, time, format) {
+        document.getElementById('mSubject').innerText = lesson.subject;
+        document.getElementById('mTime').innerText = time;
+        document.getElementById('mTeacher').innerText = lesson.teacherFull;
+        document.getElementById('mRoom').innerText = lesson.room;
+        document.getElementById('mFormat').innerText = format;
+
+        // Поділ на групи (наприклад, інформатика: 1 група — 307, 2 група — 314)
+        const groupsEl = document.getElementById('mGroups');
+        groupsEl.innerHTML = '';
+        if (Array.isArray(lesson.groups) && lesson.groups.length > 0) {
+            const title = document.createElement('div');
+            title.className = 'modal-label';
+            title.innerText = 'Поділ на групи';
+            groupsEl.appendChild(title);
+
+            lesson.groups.forEach((group) => {
+                const row = document.createElement('div');
+                row.className = 'modal-group-row';
+
+                const name = document.createElement('span');
+                name.className = 'group-name';
+                name.innerText = group.name;
+
+                const room = document.createElement('span');
+                room.className = 'group-room';
+                room.innerText = `📍 ${group.room}`;
+
+                const teacher = document.createElement('span');
+                teacher.className = 'group-teacher';
+                teacher.innerText = `👤 ${group.teacherFull}`;
+
+                row.append(name, room, teacher);
+                groupsEl.appendChild(row);
+            });
+
+            groupsEl.style.display = 'block';
+        } else {
+            groupsEl.style.display = 'none';
+        }
+
+        document.getElementById('modalOverlay').classList.add('active');
+    }
+
+    function closeModal() { document.getElementById('modalOverlay').classList.remove('active'); }
+    document.getElementById('modalOverlay').addEventListener('click', (e) => { if (e.target.id === 'modalOverlay') closeModal(); });
+    document.getElementById('adminModal').addEventListener('click', (e) => { if (e.target.id === 'adminModal') closeAdmin(); });
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') { closeModal(); closeAdmin(); }
+    });
+
+    // Запуск
+    init();
+</script>
+</body>
+</html>
