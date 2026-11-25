@@ -268,6 +268,8 @@
             </div>
         </div>
         <div class="modal-groups" id="mGroups"></div>
+        <a id="modalMeetBtn" href="#" target="_blank" rel="noopener" style="display: none; margin-top: 16px; background: var(--accent-green); color: #000; text-align: center; padding: 14px; border-radius: 14px; font-weight: 700; text-decoration: none; font-size: 15px;">🎥 Приєднатися до Google Meet</a>
+
     </div>
 </div>
 
@@ -328,6 +330,7 @@
             scheduleData = data.scheduleData;
             startDate = data.startDate;
             forceMode = data.forceMode || 'auto';
+            subjectLinks = data.subjectLinks || {};
             document.getElementById('forceModeSelect').value = forceMode;
 
             initWeekMode();
@@ -542,6 +545,19 @@
     function renderAdminEditor() {
         const editor = document.getElementById('adminEditor');
         editor.innerHTML = '';
+        const allSubjects = new Set();
+        Object.values(scheduleData).forEach(d => Object.values(d).forEach(arr => (arr || []).forEach(l => { if (l && l.subject) allSubjects.add(l.subject.trim()); })));
+
+        const linksDayEl = document.createElement('div');
+        linksDayEl.className = 'admin-day';
+        linksDayEl.innerHTML = `<h3>🎥 Посилання Google Meet по предметах</h3>` +
+            Array.from(allSubjects).sort().map(subj => `
+                <div class="admin-row" style="grid-template-columns: 1.5fr 2.5fr; margin-bottom: 8px;">
+                    <div style="font-size:14px; font-weight:600;">${subj}</div>
+                    <input type="text" class="inp-meet-link" data-subj="${subj}" placeholder="https://google.com..." value="${subjectLinks[subj] || ''}">
+                </div>
+            `).join('');
+        editor.appendChild(linksDayEl);
 
         for (const [day, modes] of Object.entries(scheduleData)) {
             const dayEl = document.createElement('div');
@@ -620,7 +636,14 @@
 
         forceMode = document.getElementById('forceModeSelect').value;
         const newSchedule = collectAdminData();
-        const payloadObj = { startDate, forceMode, scheduleData: newSchedule };
+     const newLinks = {};
+document.querySelectorAll('.inp-meet-link').forEach(inp => {
+    if (inp.value.trim()) newLinks[inp.dataset.subj] = inp.value.trim();
+});
+subjectLinks = newLinks;
+const payloadObj = { startDate, forceMode, subjectLinks: newLinks, scheduleData: newSchedule };
+
+           
 
         saveBtn.disabled = true;
         status.innerText = 'Збереження в GitHub...';
@@ -784,6 +807,16 @@
         } else {
             groupsEl.style.display = 'none';
         }
+                const meetBtn = document.getElementById('modalMeetBtn');
+        const meetUrl = lesson && lesson.subject ? subjectLinks[lesson.subject.trim()] : '';
+        const isOnlineLesson = currentMode === 'online' || (lesson && /онлайн/i.test(lesson.room || ''));
+        if (meetUrl && isOnlineLesson) {
+            meetBtn.href = meetUrl.includes('?') ? meetUrl : meetUrl + '?authuser=1';
+            meetBtn.style.display = 'block';
+        } else {
+            meetBtn.style.display = 'none';
+        }
+
 
         document.getElementById('modalOverlay').classList.add('active');
     }
