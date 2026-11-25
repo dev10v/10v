@@ -1,6 +1,25 @@
 {
   "startDate": "2026-09-01",
   "forceMode": "auto",
+  "subjectLinks": {
+    "Інформатика": "https://meet.google.com/rtf-ybsw-wsk",
+    "Історія України": "https://meet.google.com/mdf-qxek-djv",
+    "Алгебра": "https://meet.google.com/qky-xaaa-fsj",
+    "Англійська мова": "https://meet.google.com/azk-nxqb-hxy",
+    "Біологія": "https://meet.google.com/nhx-rqbk-sht",
+    "Всесвітня історія": "https://meet.google.com/bqd-vnvs-syp",
+    "Географія": "https://meet.google.com/qzk-ofcn-wsd",
+    "Геометрія": "https://meet.google.com/woj-nmns-wkv",
+    "Громадянська освіта": "https://meet.google.com/zyb-qmcu-fuo",
+    "Зарубіжна література": "https://meet.google.com/zyb-qmcu-fuo",
+    "Захист України": "https://meet.google.com/edz-vgxy-woe",
+    "Мистецтво": "https://meet.google.com/edz-vgxy-woe",
+    "Українська література": "https://meet.google.com/ibf-sepy-gxk",
+    "Українська мова": "https://meet.google.com/yvy-icig-xbr",
+    "Фізика": "https://meet.google.com/itx-uhsq-xwe",
+    "Фізкультура": "https://meet.google.com/hmt-aubv-din",
+    "Хімія": "https://meet.google.com/ock-wpdv-ico"
+  },
   "scheduleData": {
     "Понеділок": {
       "online": [
