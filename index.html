@@ -582,7 +582,7 @@
 const apiUrl = 'https' + '://' + host + '/repos/dev10v/10v/contents/data.json';
 
 
-            const getRes = await fetch(apiUrl + '?ref=main10B', {
+            const getRes = await fetch(apiUrl + '?ref=main', {
                 headers: { 'Authorization': 'Bearer ' + ghToken }
             });
             if (!getRes.ok) {
@@ -605,7 +605,7 @@ const apiUrl = 'https' + '://' + host + '/repos/dev10v/10v/contents/data.json';
                     message: 'Update schedule',
                     content: btoa(binStr),
                     sha: fileInfo.sha,
-                    branch: 'main10B'
+                    branch: 'main'
                 })
             });
 
