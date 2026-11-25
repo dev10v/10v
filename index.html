@@ -557,40 +557,67 @@
         return result;
     }
 
-    async function saveSchedule() {
+       async function saveSchedule() {
         if (!ADMIN_TOKEN) return;
-
         const saveBtn = document.getElementById('saveBtn');
         const status = document.getElementById('adminStatus');
 
+        let ghToken = localStorage.getItem('gh_admin_token');
+        if (!ghToken) {
+            ghToken = prompt('Введіть ваш GitHub Token (github_pat_...):');
+            if (!ghToken) return;
+            localStorage.setItem('gh_admin_token', ghToken.trim());
+        }
+
         forceMode = document.getElementById('forceModeSelect').value;
         const newSchedule = collectAdminData();
+        const payloadObj = { startDate, forceMode, scheduleData: newSchedule };
 
         saveBtn.disabled = true;
-        status.innerText = 'Збереження...';
+        status.innerText = 'Збереження в GitHub...';
 
         try {
-            const response = await fetch('/api/schedule', {
-                method: 'POST',
+            const apiUrl = 'https://' + '://github.com';
+            const getRes = await fetch(apiUrl + '?ref=main10B', {
+                headers: { 'Authorization': 'Bearer ' + ghToken }
+            });
+            if (!getRes.ok) {
+                if (getRes.status === 401) localStorage.removeItem('gh_admin_token');
+                throw new Error('HTTP ' + getRes.status);
+            }
+            const fileInfo = await getRes.json();
+
+            const bytes = new TextEncoder().encode(JSON.stringify(payloadObj, null, 2));
+            let binStr = '';
+            bytes.forEach((b) => { binStr += String.fromCharCode(b); });
+
+            const putRes = await fetch(apiUrl, {
+                method: 'PUT',
                 headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': ADMIN_TOKEN
+                    'Authorization': 'Bearer ' + ghToken,
+                    'Content-Type': 'application/json'
                 },
-                body: JSON.stringify({ startDate, forceMode, scheduleData: newSchedule })
+                body: JSON.stringify({
+                    message: 'Update schedule',
+                    content: btoa(binStr),
+                    sha: fileInfo.sha,
+                    branch: 'main10B'
+                })
             });
 
-            if (!response.ok) {
-                throw new Error('HTTP ' + response.status);
-            }
+            if (!putRes.ok) throw new Error('HTTP ' + putRes.status);
 
-            status.innerText = 'Збережено! Перезавантаження...';
-            window.location.reload();
+            status.innerText = 'Збережено! Оновлення через 15 сек...';
+            scheduleData = newSchedule;
+            renderSchedule();
+            setTimeout(() => { closeAdmin(); saveBtn.disabled = false; }, 1500);
         } catch (e) {
-            console.error('Помилка збереження:', e);
-            status.innerText = 'Помилка збереження. Перевірте пароль і сервер.';
+            console.error(e);
+            status.innerText = 'Помилка збереження. Перевірте токен GitHub.';
             saveBtn.disabled = false;
         }
     }
+
 
     // --- РЕНДЕР ---
     function renderSchedule() {
