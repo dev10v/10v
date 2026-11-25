@@ -582,7 +582,8 @@
 const apiUrl = 'https' + '://' + host + '/repos/dev10v/10v/contents/data.json';
 
 
-            const getRes = await fetch(apiUrl + '?ref=main', {
+            const getRes = await fetch(apiUrl, {
+
                 headers: { 'Authorization': 'Bearer ' + ghToken }
             });
             if (!getRes.ok) {
