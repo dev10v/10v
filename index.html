@@ -809,7 +809,9 @@ const payloadObj = { startDate, forceMode, subjectLinks: newLinks, scheduleData:
         }
                 const meetBtn = document.getElementById('modalMeetBtn');
         const meetUrl = lesson && lesson.subject ? subjectLinks[lesson.subject.trim()] : '';
-        const isOnlineLesson = currentMode === 'online' || (lesson && /онлайн/i.test(lesson.room || ''));
+               const isFirstThreeSlots = lesson && /^(08:15|09:10|10:15)/.test((lesson.time || '').trim());
+        const isOnlineLesson = currentMode === 'online' || isFirstThreeSlots || /онлайн/i.test(lesson?.room || '');
+
         if (meetUrl && isOnlineLesson) {
             meetBtn.href = meetUrl.includes('?') ? meetUrl : meetUrl + '?authuser=1';
             meetBtn.style.display = 'block';
